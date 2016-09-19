@@ -27,7 +27,7 @@ RUN passwd -d git
 RUN go get "github.com/docopt/docopt-go"
 RUN go get "github.com/gorilla/mux"
 RUN go get "github.com/dgrijalva/jwt-go"
-
+RUN go get "golang.org/x/crypto/ssh"
 # make gin-shell available in $PATH for ssh connections
 RUN ln -sf $GOPATH/bin/gin-shell /usr/bin/gin-shell
 
