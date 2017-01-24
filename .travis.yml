@@ -27,6 +27,8 @@ install:
   # coveralls
   - go get golang.org/x/tools/cmd/cover
   - go get github.com/mattn/goveralls
+  - mkdir -p $HOME/gopath/src/github.com/G-Node/
+  - rsync -az $TRAVIS_BUILD_DIR $HOME/gopath/src/github.com/G-Node/
 
 after_success:
   - if [ $TRAVIS_GO_VERSION == "tip" ]; then exit 0; fi
