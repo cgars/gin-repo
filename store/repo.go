@@ -163,10 +163,13 @@ func (store *RepoStore) CreateRepo(id RepoId) (*git.Repository, error) {
 	}
 
 	gin := filepath.Join(path, "gin")
-	os.Mkdir(gin, 0775) //TODO: what to do about errors?
+	os.Mkdir(gin, 0775) //TODO: what to do about errors? Generalizes to below!
+
 
 	sharing := filepath.Join(gin, "sharing")
 	os.Mkdir(sharing, 0775)
+
+	store.InitHooks(id)
 
 	return repo, nil
 }
@@ -312,6 +315,24 @@ func (store *RepoStore) GetRepoVisibility(id RepoId) (bool, error) {
 	}
 
 	return true, nil
+}
+
+func (store *RepoStore) InitHooks(id RepoId) error {
+	hPath := os.Getenv("GIN_HOOK_DIR") // Path to directory with default hooks
+	if len(hPath)==0{
+		// handling it graccefully, instead of throwing we just com
+		fmt.Fprintf(os.Stderr, "no default hook directory set")
+		return nil
+	}
+	// copying might also be nice . Or symlinks for each hook. FtTB this is fine.
+	hDir := filepath.Join(store.IdToPath(id), "hooks")
+	err := os.RemoveAll(hDir)
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "could not delete hooks directory: %+v", err)
+		return err
+	}
+	err = os.Symlink(hPath, hDir)
+	return err
 }
 
 func (store *RepoStore) SetRepoVisibility(id RepoId, public bool) error {
