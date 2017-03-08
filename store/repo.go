@@ -170,6 +170,7 @@ func (store *RepoStore) CreateRepo(id RepoId) (*git.Repository, error) {
 	os.Mkdir(sharing, 0775)
 
 	store.InitHooks(id)
+	store.InitRepoMaxSize(id)
 
 	return repo, nil
 }
@@ -333,6 +334,26 @@ func (store *RepoStore) InitHooks(id RepoId) error {
 	}
 	err = os.Symlink(hPath, hDir)
 	return err
+}
+
+func (store *RepoStore) InitRepoMaxSize(id RepoId) error {
+	path := filepath.Join(store.IdToPath(id), "gin", "size")
+	fp, err := os.Create(path)
+	if err != nil{
+		return err
+	}
+	defer fp.Close()
+	// Human readible (YAMLisch) in favor of binary encoding. Discussed on 06.03
+	_,err = fp.WriteString("maxsize: 5000\n") //MB
+	if err != nil {
+		return err
+	}
+	_, err = fp.WriteString("currsize: 0\n")
+	if err != nil {
+		return err
+	}
+	return nil
+
 }
 
 func (store *RepoStore) SetRepoVisibility(id RepoId, public bool) error {
