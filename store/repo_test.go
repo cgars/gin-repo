@@ -9,6 +9,7 @@ import (
 	"testing"
 
 	"github.com/G-Node/gin-repo/internal/testbed"
+	"io/ioutil"
 )
 
 var users UserStore
@@ -175,4 +176,85 @@ func TestRepoStore_IdToPath(t *testing.T) {
 	if !strings.Contains(path, fmt.Sprintf(filepath.Join("repos", "git", repoOwner, repoName+".git"))) {
 		t.Fatalf("Received unexpected repository path: %q\n", path)
 	}
+}
+
+func Test_RepoCreateHooks(t *testing.T) {
+	const repoOwner = "alice"
+	const repoName = "auth"
+	wDir, err := os.Getwd()
+	if err != nil{
+		t.Logf("Could not determine working directory.%+v", err)
+		t.Skip()
+		return
+	}
+
+	r := RepoId{Owner: repoOwner, Name: repoName}
+	// Test for hooks when no dir specified
+	err = repos.InitHooks(r)
+	if err == nil {
+		t.Log("[Ok] Hook without envVar set should not Fail")
+	}
+
+	// Test for hooks with dir specified
+	err = os.Mkdir(wDir+"/hooktarget", os.ModePerm)
+	defer os.Remove(wDir + "/hooktarget")
+	if err != nil {
+		t.Logf("Could not create hook target %+v", err)
+		t.Skip()
+		return
+	}
+	os.Setenv("GIN_HOOK_DIR", filepath.Join(wDir, "hooktarget"))
+	err = repos.InitHooks(r)
+	if err != nil {
+		t.Logf("Hooking went wrong: %+v", err)
+		t.Fail()
+		return
+	}
+	fInfo, err := os.Stat(filepath.Join(repos.IdToPath(r), "hooks"))
+	if err != nil{
+		t.Logf("Cant acess hooks link: %+v", err)
+		t.Fail()
+		return
+	}
+	if (fInfo.Mode())&os.ModeSymlink != 0 {
+		t.Logf("Hooks is not a link: %+v", fInfo)
+		t.Fail()
+		return
+	}
+	t.Logf("[OK] Hooks directory can be linked")
+}
+
+func Test_InitRepoMaxSize(t *testing.T) {
+	const repoOwner = "alice"
+	const repoName = "auth"
+
+	r := RepoId{Owner: repoOwner, Name: repoName}
+	rPath := repos.IdToPath(r)
+	// Test for hooks when no dir specified
+	err := repos.InitRepoMaxSize(r)
+	if err != nil{
+		t.Logf("Cant init mx Repository size: %+v", err)
+		t.Fail()
+		return
+	}
+	f,err := os.Open(filepath.Join(rPath,"gin","size"))
+	if err != nil{
+		t.Logf("Repos size file was not created: %+v", err)
+		t.Fail()
+		return
+	}
+
+	fCont,err := ioutil.ReadAll(f)
+	if err != nil{
+		t.Logf("Repo size file could not be read: %+v", err)
+		t.Fail()
+		return
+	}
+
+	if mess:=string(fCont);mess!="maxsize: 5000\ncurrsize: 0\n"{
+		t.Logf("Repo size file has wrong content: %s", mess)
+		t.Fail()
+		return
+	}
+	t.Logf("[OK] Repo max size can be initialized")
 }

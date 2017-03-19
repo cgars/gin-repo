@@ -320,14 +320,22 @@ func (store *RepoStore) GetRepoVisibility(id RepoId) (bool, error) {
 
 func (store *RepoStore) InitHooks(id RepoId) error {
 	hPath := os.Getenv("GIN_HOOK_DIR") // Path to directory with default hooks
-	if len(hPath)==0{
-		// handling it graccefully, instead of throwing we just com
+	if len(hPath) == 0 {
+		// handling it gracefully, instead of throwing we just complain
 		fmt.Fprintf(os.Stderr, "no default hook directory set")
 		return nil
 	}
+	_, err := os.Stat(hPath)
+
+	//Check for hook directory
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "Hook dir specified but not there")
+		return err
+	}
+
 	// copying might also be nice . Or symlinks for each hook. FtTB this is fine.
 	hDir := filepath.Join(store.IdToPath(id), "hooks")
-	err := os.RemoveAll(hDir)
+	err = os.RemoveAll(hDir)
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "could not delete hooks directory: %+v", err)
 		return err
@@ -343,7 +351,7 @@ func (store *RepoStore) InitRepoMaxSize(id RepoId) error {
 		return err
 	}
 	defer fp.Close()
-	// Human readible (YAMLisch) in favor of binary encoding. Discussed on 06.03
+	// Human readable (YAMLisch) in favor of binary encoding. Discussed on 06.03
 	_,err = fp.WriteString("maxsize: 5000\n") //MB
 	if err != nil {
 		return err
