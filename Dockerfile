@@ -32,7 +32,6 @@ RUN go get "github.com/dgrijalva/jwt-go"
 RUN ln -sf $GOPATH/bin/gin-shell /usr/bin/gin-shell
 
 # setup the ssh deamon
-COPY ./contrib/ssh_host_rsa_key* /etc/ssh/
 COPY ./contrib/sshd_config /etc/ssh/
 RUN chmod -R 600 /etc/ssh/ssh_host_rsa_key
 RUN mkdir /var/run/sshd && chmod 755 /var/run/sshd
